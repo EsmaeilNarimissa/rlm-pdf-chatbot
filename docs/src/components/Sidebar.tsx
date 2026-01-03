@@ -60,7 +60,7 @@ export function Sidebar() {
                       )}
                     />
                   </button>
-                  {isExpanded && (
+                  {isExpanded && item.children && (
                     <ul className="mt-1 ml-3 space-y-1 border-l border-border pl-3">
                       {item.children.map((child) => (
                         <li key={child.href}>
