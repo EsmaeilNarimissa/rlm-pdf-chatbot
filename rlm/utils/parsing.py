@@ -41,23 +41,44 @@ def find_final_answer(text: str, environment: "BaseEnv | None" = None) -> str | 
         The final answer string, or None if no final answer pattern is found
     """
     # Check for FINAL_VAR pattern first - must be at start of line
-    final_var_pattern = r"^\s*FINAL_VAR\((.*?)\)"
-    match = re.search(final_var_pattern, text, re.MULTILINE | re.DOTALL)
-    if match:
-        variable_name = match.group(1).strip().strip('"').strip("'")
-        if environment is not None:
-            result = environment.execute_code(f"print(FINAL_VAR({variable_name!r}))")
-            final_answer = result.stdout.strip()
-            if final_answer == "":
-                final_answer = result.stderr.strip() or ""
-            return final_answer
-        return None
+    # Use balanced parenthesis matching to handle variable names with parens
+    final_var_match = re.search(r"^\s*FINAL_VAR\(", text, re.MULTILINE)
+    if final_var_match:
+        start_idx = final_var_match.end()
+        paren_count = 1
+        idx = start_idx
+        while idx < len(text) and paren_count > 0:
+            if text[idx] == '(':
+                paren_count += 1
+            elif text[idx] == ')':
+                paren_count -= 1
+            idx += 1
+        if paren_count == 0:
+            variable_name = text[start_idx:idx-1].strip().strip('"').strip("'")
+            if environment is not None:
+                result = environment.execute_code(f"print(FINAL_VAR({variable_name!r}))")
+                final_answer = result.stdout.strip()
+                if final_answer == "":
+                    final_answer = result.stderr.strip() or ""
+                return final_answer
+            return None
 
     # Check for FINAL pattern - must be at start of line
-    final_pattern = r"^\s*FINAL\((.*?)\)"
-    match = re.search(final_pattern, text, re.MULTILINE | re.DOTALL)
-    if match:
-        return match.group(1).strip()
+    # Use greedy match to last ) on same line, then find balanced parens
+    final_match = re.search(r"^\s*FINAL\(", text, re.MULTILINE)
+    if final_match:
+        # Find the matching closing parenthesis by counting parens
+        start_idx = final_match.end()
+        paren_count = 1
+        idx = start_idx
+        while idx < len(text) and paren_count > 0:
+            if text[idx] == '(':
+                paren_count += 1
+            elif text[idx] == ')':
+                paren_count -= 1
+            idx += 1
+        if paren_count == 0:
+            return text[start_idx:idx-1].strip()
 
     return None
 

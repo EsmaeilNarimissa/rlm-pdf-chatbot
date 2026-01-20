@@ -102,13 +102,14 @@ _SAFE_BUILTINS = {
     "ArithmeticError": ArithmeticError,
     "LookupError": LookupError,
     "Warning": Warning,
-    # Blocked
+    # Safe introspection (needed for models to check available variables)
+    "globals": globals,
+    "locals": locals,
+    # Blocked - dangerous execution functions
     "input": None,
     "eval": None,
     "exec": None,
     "compile": None,
-    "globals": None,
-    "locals": None,
 }
 
 
