@@ -78,7 +78,22 @@ def find_final_answer(text: str, environment: "BaseEnv | None" = None) -> str | 
                 paren_count -= 1
             idx += 1
         if paren_count == 0:
-            return text[start_idx:idx-1].strip()
+            content = text[start_idx:idx-1].strip()
+            
+            # Check if the content looks like a variable name (single identifier)
+            # Some models (e.g., Gemini) use FINAL(var) instead of FINAL_VAR(var)
+            if environment is not None and re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', content):
+                # Try to look up the variable in the environment
+                try:
+                    result = environment.execute_code(f"print({content})")
+                    var_value = result.stdout.strip()
+                    if var_value and not result.stderr:
+                        # Successfully looked up variable, return its value
+                        return var_value
+                except Exception:
+                    pass  # Fall through to return content as-is
+            
+            return content
 
     return None
 
